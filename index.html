@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR First Gallery</title>
+<style>
+  :root{--bg:#f4f8fb;--card:#fff;--ink:#17313b;--muted:#617782;--accent:#168b91;--accent2:#dff5f3;--line:#dce7ec;--shadow:0 12px 34px rgba(25,65,80,.09)}
+  *{box-sizing:border-box} body{margin:0;background:linear-gradient(140deg,#f2fbff,#f5fff9);font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--ink)}
+  header{padding:32px 18px 22px;text-align:center} .brand{display:inline-flex;gap:10px;align-items:center;background:#fff;padding:9px 14px;border:1px solid var(--line);border-radius:999px;color:var(--accent);font-weight:800;font-size:13px;letter-spacing:.04em}
+  h1{font-size:clamp(28px,5vw,44px);margin:16px 0 8px;letter-spacing:-.04em} header p{color:var(--muted);margin:0 auto;max-width:620px;line-height:1.55}
+  main{max-width:1100px;margin:0 auto;padding:0 18px 50px}
+  .search-panel{display:flex;gap:10px;align-items:center;margin:18px auto 22px;max-width:760px;background:#fff;border:1px solid var(--line);padding:10px;border-radius:18px;box-shadow:var(--shadow)}
+  .search-panel .glass{padding:0 8px;font-size:22px}.search-panel input{border:0;outline:0;min-width:0;flex:1;font-size:16px;padding:12px 2px;background:transparent;color:var(--ink)}
+  button{border:0;border-radius:12px;background:var(--accent);color:#fff;padding:12px 16px;font-weight:750;cursor:pointer}button:hover{filter:brightness(.95)}button.secondary{background:var(--accent2);color:#11656b}button.danger{background:#fff0ef;color:#a5332b;padding:8px 10px}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 14px;flex-wrap:wrap}.count{font-size:13px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;box-shadow:var(--shadow);min-width:0}
+  .preview{height:190px;background:#f0f6f8;border-radius:13px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+  .preview img{width:100%;height:100%;object-fit:contain}.name{font-weight:800;margin:12px 2px 4px;overflow-wrap:anywhere}.sub{color:var(--muted);font-size:12px;margin:0 2px 10px}
+  .card-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}.pill{font-size:11px;font-weight:800;color:#16757b;background:#e6f7f5;border-radius:999px;padding:6px 8px}
+  .empty{padding:50px 18px;text-align:center;border:1px dashed #bdd0d8;background:rgba(255,255,255,.65);border-radius:20px;color:var(--muted);line-height:1.6}.empty b{display:block;color:var(--ink);font-size:18px;margin-bottom:5px}
+  dialog{width:min(540px,calc(100% - 28px));border:1px solid var(--line);border-radius:20px;padding:0;box-shadow:0 24px 80px #17313b44;color:var(--ink)}dialog::backdrop{background:#102a36a6;backdrop-filter:blur(3px)}
+  .dialog-head{padding:20px 22px 10px}.dialog-head h2{margin:0 0 5px}.dialog-head p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+  form{padding:12px 22px 22px}.field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:800;margin-bottom:7px}.field input[type=text],.field input[type=file]{width:100%;border:1px solid var(--line);border-radius:11px;padding:11px;background:#fbfdfe;color:var(--ink)}.hint{font-size:12px;color:var(--muted);line-height:1.4;margin-top:5px}
+  .dialog-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.notice{display:none;margin:0 0 16px;padding:12px 14px;border-radius:12px;background:#fff7df;color:#765719;font-size:13px;line-height:1.45}.footer{text-align:center;color:var(--muted);font-size:12px;margin:26px 0 0}
+  @media(max-width:520px){header{padding-top:22px}.search-panel{border-radius:14px}.search-panel button{padding:11px 12px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.preview{height:145px}.card{padding:9px}.name{font-size:14px}.sub{font-size:11px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span>▦</span> QR FIRST GALLERY</div>
+  <h1>Search a name. Reveal the photo.</h1>
+  <p>Your gallery starts with QR codes. Type an image name to reveal its original photo. Your files stay in this browser on this device. For best results, use Chrome or Edge.</p>
+</header>
+<main>
+  <div class="search-panel">
+    <span class="glass" aria-hidden="true">⌕</span>
+    <input id="search" type="search" placeholder="Search image name, e.g. birthday" autocomplete="off" aria-label="Search image name">
+    <button id="clearBtn" class="secondary" type="button">Clear</button>
+  </div>
+  <div id="notice" class="notice"></div>
+  <div class="toolbar">
+    <div id="count" class="count">Loading your gallery…</div>
+    <button id="addBtn" type="button">＋ Add image pair</button>
+  </div>
+  <div id="gallery" class="grid"></div>
+  <div class="footer">Local-first demo · QR images are placeholders, original photos are revealed by matching name.</div>
+</main>
+
+<dialog id="addDialog">
+  <div class="dialog-head">
+    <h2>Add an image pair</h2>
+    <p>Choose the original photo and its matching QR-code image. The website saves them in this browser using IndexedDB.</p>
+  </div>
+  <form id="addForm">
+    <div class="field"><label for="imageName">Search name</label><input id="imageName" type="text" placeholder="e.g. birthday" required maxlength="100"><div class="hint">Use a memorable name. Searching is case-insensitive.</div></div>
+    <div class="field"><label for="originalFile">Original photo</label><input id="originalFile" type="file" accept="image/*" required></div>
+    <div class="field"><label for="qrFile">QR-code image</label><input id="qrFile" type="file" accept="image/*" required></div>
+    <div class="dialog-actions"><button id="cancelAdd" class="secondary" type="button">Cancel</button><button type="submit">Save pair</button></div>
+  </form>
+</dialog>
+
+<dialog id="previewDialog">
+  <div class="dialog-head"><h2 id="previewTitle">Preview</h2><p id="previewSub"></p></div>
+  <div style="padding:0 22px 22px"><img id="previewImage" alt="Selected gallery image" style="display:block;width:100%;max-height:65vh;object-fit:contain;background:#f0f6f8;border-radius:14px"><div class="dialog-actions"><button id="closePreview" type="button">Close</button></div></div>
+</dialog>
+
+<script>
+(() => {
+  const DB_NAME = "qr-first-gallery-db";
+  const STORE = "items";
+  let db;
+  const $ = id => document.getElementById(id);
+  const search = $("search"), gallery = $("gallery"), count = $("count"), notice = $("notice");
+  const addDialog = $("addDialog"), previewDialog = $("previewDialog");
+  let items = [];
+  let activeUrls = [];
+
+  function showNotice(message) {
+    notice.textContent = message;
+    notice.style.display = "block";
+  }
+  function hideNotice() { notice.style.display = "none"; }
+
+  function openDb() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, 1);
+      request.onupgradeneeded = () => {
+        const database = request.result;
+        if (!database.objectStoreNames.contains(STORE)) database.createObjectStore(STORE, {keyPath: "id", autoIncrement: true});
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  function allItems() {
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(STORE, "readonly").objectStore(STORE).getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  function putItem(item) {
+    return new Promise((resolve, reject) => {
+      try {
+        const tx = db.transaction(STORE, "readwrite");
+        const req = tx.objectStore(STORE).put(item);
+        let result;
+        req.onsuccess = () => { result = req.result; };
+        req.onerror = () => reject(req.error || new Error("Database write failed."));
+        tx.oncomplete = () => resolve(result);
+        tx.onerror = () => reject(tx.error || new Error("Storage transaction failed."));
+        tx.onabort = () => reject(tx.error || new Error("Storage transaction was cancelled."));
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  function deleteItem(id) {
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(STORE, "readwrite").objectStore(STORE).delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+  function releaseUrls() {
+    activeUrls.forEach(URL.revokeObjectURL);
+    activeUrls = [];
+  }
+  function imageUrl(blob) {
+    const url = URL.createObjectURL(blob);
+    activeUrls.push(url);
+    return url;
+  }
+  function showPreview(item, reveal) {
+    const blob = reveal ? item.originalBlob : item.qrBlob;
+    $("previewTitle").textContent = item.name;
+    $("previewSub").textContent = reveal ? "Original photo" : "QR-code image";
+    $("previewImage").src = imageUrl(blob);
+    previewDialog.showModal();
+  }
+  function render() {
+    releaseUrls();
+    const query = search.value.trim().toLocaleLowerCase();
+    const matches = items.filter(item => item.name.toLocaleLowerCase().includes(query));
+    count.textContent = `${matches.length} image${matches.length === 1 ? "" : "s"} · ${query ? "matching photos revealed" : "QR codes shown by default"}`;
+    gallery.replaceChildren();
+    if (!matches.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.style.gridColumn = "1 / -1";
+      empty.innerHTML = `<b>${query ? "No matching image found" : "Your gallery is ready for its first pair"}</b>${query ? "Try another name, or add the image using the button above." : "Tap “Add image pair” to choose an original photo and its QR image."}`;
+      gallery.append(empty);
+      return;
+    }
+    for (const item of matches) {
+      const reveal = query.length > 0;
+      const card = document.createElement("article");
+      card.className = "card";
+      const preview = document.createElement("div");
+      preview.className = "preview";
+      preview.title = "Click to enlarge";
+      const img = document.createElement("img");
+      img.alt = reveal ? `Original photo: ${item.name}` : `QR code for ${item.name}`;
+      img.src = imageUrl(reveal ? item.originalBlob : item.qrBlob);
+      preview.append(img);
+      preview.addEventListener("click", () => showPreview(item, reveal));
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = item.name;
+      const sub = document.createElement("div");
+      sub.className = "sub";
+      sub.textContent = reveal ? "Original photo · click to enlarge" : "QR code · click to enlarge";
+      const actions = document.createElement("div");
+      actions.className = "card-actions";
+      const pill = document.createElement("span");
+      pill.className = "pill";
+      pill.textContent = reveal ? "PHOTO REVEALED" : "QR PLACEHOLDER";
+      const remove = document.createElement("button");
+      remove.className = "danger";
+      remove.type = "button";
+      remove.textContent = "Remove";
+      remove.addEventListener("click", async () => {
+        if (!confirm(`Remove "${item.name}" from this browser gallery?`)) return;
+        await deleteItem(item.id);
+        items = await allItems();
+        render();
+      });
+      actions.append(pill, remove);
+      card.append(preview, name, sub, actions);
+      gallery.append(card);
+    }
+  }
+
+  $("addBtn").addEventListener("click", () => { hideNotice(); $("addForm").reset(); addDialog.showModal(); });
+  $("cancelAdd").addEventListener("click", () => addDialog.close());
+  $("clearBtn").addEventListener("click", () => { search.value = ""; render(); search.focus(); });
+  search.addEventListener("input", render);
+  $("closePreview").addEventListener("click", () => previewDialog.close());
+  previewDialog.addEventListener("close", () => { $("previewImage").removeAttribute("src"); });
+
+  $("addForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    hideNotice();
+
+    const name = $("imageName").value.trim();
+    const originalInput = $("originalFile");
+    const qrInput = $("qrFile");
+    const original = originalInput.files && originalInput.files[0];
+    const qr = qrInput.files && qrInput.files[0];
+
+    if (!name) {
+      showNotice("Please enter an image name.");
+      $("imageName").focus();
+      return;
+    }
+    if (!original) {
+      showNotice("Please choose the original photo first.");
+      originalInput.focus();
+      return;
+    }
+    if (!qr) {
+      showNotice("Please choose the QR-code image.");
+      qrInput.focus();
+      return;
+    }
+    if (!(original.type || "").startsWith("image/")) {
+      showNotice("The original file must be an image (JPG, PNG, WEBP, etc.).");
+      return;
+    }
+    if (!(qr.type || "").startsWith("image/")) {
+      showNotice("The QR-code file must be an image (JPG, PNG, WEBP, etc.).");
+      return;
+    }
+
+    const submitButton = $("addForm").querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = "Saving…";
+
+    try {
+      if (!db) throw new Error("Gallery storage is not ready yet. Refresh the page and try again.");
+      const duplicate = items.find(item => item.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+      const record = {
+        name,
+        originalBlob: original,
+        qrBlob: qr,
+        updatedAt: Date.now()
+      };
+      if (duplicate) record.id = duplicate.id;
+
+      await putItem(record);
+      items = await allItems();
+
+      // Confirm the record really persisted before closing the form.
+      const saved = items.some(item =>
+        item.name.toLocaleLowerCase() === name.toLocaleLowerCase() &&
+        item.originalBlob instanceof Blob &&
+        item.qrBlob instanceof Blob
+      );
+      if (!saved) throw new Error("The browser did not confirm saving this pair.");
+
+      addDialog.close();
+      search.value = "";
+      render();
+      showNotice(`Saved "${name}" successfully. Search for its name to reveal the original photo.`);
+    } catch (error) {
+      console.error("Save image pair failed:", error);
+      showNotice(
+        (error && error.name === "QuotaExceededError")
+          ? "Browser storage is full. Try smaller photos or remove some saved items."
+          : "Could not save this pair. Try opening this file in a current Chrome or Edge browser, then choose both images again. Details: " + (error?.message || "unknown storage error")
+      );
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = "Save pair";
+    }
+  });
+
+  (async () => {
+    try {
+      if (!("indexedDB" in window)) throw new Error("IndexedDB is not supported");
+      db = await openDb();
+      items = await allItems();
+      render();
+    } catch (error) {
+      count.textContent = "Could not load local storage";
+      showNotice("This browser could not open local gallery storage. Try a current version of Chrome, Edge, Firefox, or Safari.");
+      console.error(error);
+    }
+  })();
+})();
+</script>
+</body>
+</html>
