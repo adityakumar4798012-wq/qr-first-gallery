@@ -1,2 +1,1 @@
-# qr-first-gallery
-QR First Gallery Website
+index.html Website
